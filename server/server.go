@@ -1,12 +1,11 @@
 package main
 
 import (
-	"bufio"
 	"encoding/gob"
 	"fmt"
 	"io"
+	"net"
 	"os"
-	"strings"
 	"sync"
 )
 
@@ -16,17 +15,16 @@ var (
 	dataFile *os.File
 )
 
-type Action string
-
-const Get Action = "get"
-const Set Action = "set"
-
 func main() {
-	var src string
-	var err error
 
-	readFromDisk()
+	args := os.Args[1:]
+	port := args[0]
+	storageFileName := args[1]
 
+	// Upon start, read the data into memory
+	readFromDisk(storageFileName)
+
+	// Create a file descriptor for writing to the file
 	currentDir, err := os.Getwd()
 	if err != nil {
 		panic(err)
@@ -38,18 +36,43 @@ func main() {
 	}
 	defer dataFile.Close()
 
-	fmt.Println("PILE: what's up?")
+	service := fmt.Sprintf(":%v", port)
+	tcpAddr, resolveErr := net.ResolveTCPAddr("tcp4", service)
+	checkErr(resolveErr)
+	listener, listenErr := net.ListenTCP("tcp", tcpAddr)
+	checkErr(listenErr)
+	defer listener.Close()
 
-	for true {
-		src = readStdin()
+	for {
+		conn, acceptErr := listener.Accept()
+		if acceptErr != nil {
+			continue
+		}
+		go handleClient(conn)
+	}
+}
 
-		action, key, val, err := parseInput(src)
-		if err == nil {
+func handleClient(conn net.Conn) {
+	request := make([]byte, 128) // set maximum request length to 128B to prevent flood based attacks
+
+	read_len, err := conn.Read(request)
+
+	if err != nil {
+		checkErr(err)
+	}
+
+	if read_len == 0 {
+		return // connection already closed by client
+	} else {
+		req := string(request[:read_len])
+		action, key, val, parseErr := parseInput(req)
+		if parseErr == nil {
 			println("---------------------------------")
 			switch action {
 			case Get:
 				mutex.RLock()
-				fmt.Println(memory[key])
+				_, writerErr := conn.Write([]byte(memory[key]))
+				checkErr(writerErr)
 				mutex.RUnlock()
 			case Set:
 				mutex.Lock()
@@ -57,36 +80,14 @@ func main() {
 				fmt.Println("Set")
 				writeToDisk()
 				mutex.Unlock()
+				_, writerErr := conn.Write([]byte(memory[key]))
+				checkErr(writerErr)
 			}
 		} else {
-			fmt.Println("== Error ========")
-			fmt.Println(err)
+			_, writerErr := conn.Write([]byte(fmt.Sprintf("Error: %v", parseErr.Error())))
+			checkErr(writerErr)
 		}
-	}
-}
-
-func parseInput(src string) (Action, string, string, error) {
-	parts := strings.Split(strings.TrimSpace(src), " ")
-
-	partsCount := len(parts)
-
-	if partsCount < 2 || partsCount > 3 {
-		return "", "", "", fmt.Errorf("invalid input. Should be of the form 'get key' or 'set key value'")
-	}
-
-	switch parts[0] {
-	case string(Get):
-		if partsCount > 2 {
-			return "", "", "", fmt.Errorf("invalid input. Should be of the form 'get key'")
-		}
-		return Get, parts[1], "", nil
-	case string(Set):
-		if partsCount < 3 {
-			return "", "", "", fmt.Errorf("invalid input. Should be of the form 'set key value'")
-		}
-		return Set, parts[1], parts[2], nil
-	default:
-		return "", "", "", fmt.Errorf("invalid action: %v. Should be get or set'", parts[0])
+		conn.Close()
 	}
 }
 
@@ -108,12 +109,12 @@ func writeToDisk() {
 	}
 }
 
-func readFromDisk() {
+func readFromDisk(storageFileName string) {
 	currentDir, err := os.Getwd()
 	if err != nil {
 		panic(err)
 	}
-	file, fileErr := os.OpenFile(fmt.Sprintf("%v/data.json", currentDir), os.O_RDONLY|os.O_CREATE, 0777)
+	file, fileErr := os.OpenFile(fmt.Sprintf("%v/%v", currentDir, storageFileName), os.O_RDONLY|os.O_CREATE, 0777)
 	if fileErr != nil {
 		panic(fmt.Sprintf("Error reading data from disk: %e", fileErr))
 	}
@@ -124,11 +125,4 @@ func readFromDisk() {
 	if decodeErr != nil && decodeErr != io.EOF {
 		panic(fmt.Sprintf("Error decoding storage %e", decodeErr))
 	}
-}
-
-func readStdin() (buf string) {
-	r := bufio.NewReader(os.Stdin)
-
-	line, _ := r.ReadString('\n')
-	return line
 }
