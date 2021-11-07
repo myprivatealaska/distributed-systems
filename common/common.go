@@ -10,7 +10,3 @@ func CheckError(err error) {
 		panic(err)
 	}
 }
-
-func Rand() int {
-	return 0
-}

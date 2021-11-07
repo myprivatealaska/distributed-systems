@@ -1,0 +1,3 @@
+github.com/myprivatealaska/distributed-systems v0.0.0-20211107172428-e4cd436eab66 h1:zG3n154PTQH8D27Ibo1TVHNQ3eH6AjRce8Z+TtziVVc=
+github.com/myprivatealaska/distributed-systems/common v0.0.0-20211107172428-e4cd436eab66 h1:3f63L41ZeukuZ/p93aawAQcFk5cCSvD36bXcSRj2vwU=
+github.com/myprivatealaska/distributed-systems/common v0.0.0-20211107172428-e4cd436eab66/go.mod h1:wCr5hljEDOHwHxYw/1LsISgwD1Ce7B36hBn7NZXiuJ4=
