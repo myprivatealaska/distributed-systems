@@ -7,6 +7,8 @@ import (
 	"net"
 	"os"
 	"sync"
+
+	"github.com/myprivatealaska/distributed-systems/common"
 )
 
 var (
@@ -38,9 +40,9 @@ func main() {
 
 	service := fmt.Sprintf(":%v", port)
 	tcpAddr, resolveErr := net.ResolveTCPAddr("tcp4", service)
-	checkErr(resolveErr)
+	common.CheckErr(resolveErr)
 	listener, listenErr := net.ListenTCP("tcp", tcpAddr)
-	checkErr(listenErr)
+	common.CheckErr(listenErr)
 	defer listener.Close()
 
 	for {
@@ -58,7 +60,7 @@ func handleClient(conn net.Conn) {
 	read_len, err := conn.Read(request)
 
 	if err != nil {
-		checkErr(err)
+		common.CheckErr(err)
 	}
 
 	if read_len == 0 {
@@ -72,7 +74,7 @@ func handleClient(conn net.Conn) {
 			case Get:
 				mutex.RLock()
 				_, writerErr := conn.Write([]byte(memory[key]))
-				checkErr(writerErr)
+				common.CheckErr(writerErr)
 				mutex.RUnlock()
 			case Set:
 				mutex.Lock()
@@ -81,11 +83,11 @@ func handleClient(conn net.Conn) {
 				writeToDisk()
 				mutex.Unlock()
 				_, writerErr := conn.Write([]byte(memory[key]))
-				checkErr(writerErr)
+				common.CheckErr(writerErr)
 			}
 		} else {
 			_, writerErr := conn.Write([]byte(fmt.Sprintf("Error: %v", parseErr.Error())))
-			checkErr(writerErr)
+			common.CheckErr(writerErr)
 		}
 		conn.Close()
 	}

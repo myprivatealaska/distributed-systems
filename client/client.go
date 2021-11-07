@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"strings"
 
 	"github.com/myprivatealaska/distributed-systems/common"
 )
@@ -13,7 +14,7 @@ import (
 func main() {
 
 	tcpAddr, resolveErr := net.ResolveTCPAddr("tcp4", ":9000")
-	checkErr(resolveErr)
+	common.CheckErr(resolveErr)
 
 	var src string
 	var err error
@@ -31,7 +32,7 @@ func main() {
 		}
 
 		conn, dialErr := net.DialTCP("tcp", nil, tcpAddr)
-		checkErr(dialErr)
+		common.(dialErr)
 
 		_, err = conn.Write([]byte(fmt.Sprintf("%v %v %v", action, key, val)))
 		checkErr(err)
@@ -48,4 +49,29 @@ func readStdin() (buf string) {
 
 	line, _ := r.ReadString('\n')
 	return line
+}
+
+func parseInput(src string) (common.Action, string, string, error) {
+	parts := strings.Split(strings.TrimSpace(src), " ")
+
+	partsCount := len(parts)
+
+	if partsCount < 2 || partsCount > 3 {
+		return "", "", "", fmt.Errorf("invalid input. Should be of the form 'get key' or 'set key value'")
+	}
+
+	switch parts[0] {
+	case string(Get):
+		if partsCount > 2 {
+			return "", "", "", fmt.Errorf("invalid input. Should be of the form 'get key'")
+		}
+		return Get, parts[1], "", nil
+	case string(Set):
+		if partsCount < 3 {
+			return "", "", "", fmt.Errorf("invalid input. Should be of the form 'set key value'")
+		}
+		return Set, parts[1], parts[2], nil
+	default:
+		return "", "", "", fmt.Errorf("invalid action: %v. Should be get or set'", parts[0])
+	}
 }
