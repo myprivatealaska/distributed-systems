@@ -1,4 +1,4 @@
-package client
+package main
 
 import (
 	"bufio"
@@ -9,12 +9,13 @@ import (
 	"strings"
 
 	"github.com/myprivatealaska/distributed-systems/common"
+	"github.com/myprivatealaska/distributed-systems/protocol"
 )
 
 func main() {
 
 	tcpAddr, resolveErr := net.ResolveTCPAddr("tcp4", ":9000")
-	common.CheckErr(resolveErr)
+	common.CheckError(resolveErr)
 
 	var src string
 	var err error
@@ -32,12 +33,14 @@ func main() {
 		}
 
 		conn, dialErr := net.DialTCP("tcp", nil, tcpAddr)
-		common.(dialErr)
+		common.CheckError(dialErr)
 
-		_, err = conn.Write([]byte(fmt.Sprintf("%v %v %v", action, key, val)))
-		checkErr(err)
+		payload := protocol.Encode(action, key, val)
+		_, err = conn.Write(payload)
+		common.CheckError(err)
+
 		result, readErr := ioutil.ReadAll(conn)
-		checkErr(readErr)
+		common.CheckError(readErr)
 		fmt.Println(string(result))
 
 		conn.Close()
@@ -61,16 +64,16 @@ func parseInput(src string) (common.Action, string, string, error) {
 	}
 
 	switch parts[0] {
-	case string(Get):
+	case string(common.Get):
 		if partsCount > 2 {
 			return "", "", "", fmt.Errorf("invalid input. Should be of the form 'get key'")
 		}
-		return Get, parts[1], "", nil
-	case string(Set):
+		return common.Get, parts[1], "", nil
+	case string(common.Set):
 		if partsCount < 3 {
 			return "", "", "", fmt.Errorf("invalid input. Should be of the form 'set key value'")
 		}
-		return Set, parts[1], parts[2], nil
+		return common.Set, parts[1], parts[2], nil
 	default:
 		return "", "", "", fmt.Errorf("invalid action: %v. Should be get or set'", parts[0])
 	}

@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/myprivatealaska/distributed-systems/common"
+	"github.com/myprivatealaska/distributed-systems/protocol"
 )
 
 var (
@@ -32,7 +33,7 @@ func main() {
 		panic(err)
 	}
 
-	dataFile, err = os.OpenFile(fmt.Sprintf("%v/data.json", currentDir), os.O_WRONLY, 0777)
+	dataFile, err = os.OpenFile(fmt.Sprintf("%v/%v", currentDir, storageFileName), os.O_WRONLY, 0777)
 	if err != nil {
 		panic(err)
 	}
@@ -40,9 +41,9 @@ func main() {
 
 	service := fmt.Sprintf(":%v", port)
 	tcpAddr, resolveErr := net.ResolveTCPAddr("tcp4", service)
-	common.CheckErr(resolveErr)
+	common.CheckError(resolveErr)
 	listener, listenErr := net.ListenTCP("tcp", tcpAddr)
-	common.CheckErr(listenErr)
+	common.CheckError(listenErr)
 	defer listener.Close()
 
 	for {
@@ -60,34 +61,28 @@ func handleClient(conn net.Conn) {
 	read_len, err := conn.Read(request)
 
 	if err != nil {
-		common.CheckErr(err)
+		common.CheckError(err)
 	}
 
 	if read_len == 0 {
 		return // connection already closed by client
 	} else {
-		req := string(request[:read_len])
-		action, key, val, parseErr := parseInput(req)
-		if parseErr == nil {
-			println("---------------------------------")
-			switch action {
-			case Get:
-				mutex.RLock()
-				_, writerErr := conn.Write([]byte(memory[key]))
-				common.CheckErr(writerErr)
-				mutex.RUnlock()
-			case Set:
-				mutex.Lock()
-				memory[key] = val
-				fmt.Println("Set")
-				writeToDisk()
-				mutex.Unlock()
-				_, writerErr := conn.Write([]byte(memory[key]))
-				common.CheckErr(writerErr)
-			}
-		} else {
-			_, writerErr := conn.Write([]byte(fmt.Sprintf("Error: %v", parseErr.Error())))
-			common.CheckErr(writerErr)
+		req := request[:read_len]
+		action, key, val := protocol.Decode(req)
+		switch action {
+		case common.Get:
+			mutex.RLock()
+			_, writerErr := conn.Write([]byte(memory[key]))
+			common.CheckError(writerErr)
+			mutex.RUnlock()
+		case common.Set:
+			mutex.Lock()
+			memory[key] = val
+			fmt.Println("Set")
+			writeToDisk()
+			mutex.Unlock()
+			_, writerErr := conn.Write([]byte(memory[key]))
+			common.CheckError(writerErr)
 		}
 		conn.Close()
 	}

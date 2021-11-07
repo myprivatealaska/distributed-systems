@@ -1,0 +1,6 @@
+github.com/myprivatealaska/distributed-systems v0.0.0-20211107190605-2ea4e0fc1027 h1:1Izis6v4O+nZYxLFBa0eY67sorOnZOSVSq44y7nTe4w=
+github.com/myprivatealaska/distributed-systems/common v0.0.0-20211107172428-e4cd436eab66/go.mod h1:wCr5hljEDOHwHxYw/1LsISgwD1Ce7B36hBn7NZXiuJ4=
+github.com/myprivatealaska/distributed-systems/common v0.0.0-20211107190605-2ea4e0fc1027 h1:a9p803OnTn9t7cQdLkWCe39Txih+rNmz1vPwsrZKIkA=
+github.com/myprivatealaska/distributed-systems/common v0.0.0-20211107190605-2ea4e0fc1027/go.mod h1:wCr5hljEDOHwHxYw/1LsISgwD1Ce7B36hBn7NZXiuJ4=
+github.com/myprivatealaska/distributed-systems/protocol v0.0.0-20211107190605-2ea4e0fc1027 h1:mQEjRPwb5dO49DD+BKAH6+uk8/TyQR+Qig+xX7Wn1IY=
+github.com/myprivatealaska/distributed-systems/protocol v0.0.0-20211107190605-2ea4e0fc1027/go.mod h1:MfMsDnhRi8UbVlGzjwURY5erV+KFc87NZ2ESViEI4q4=
