@@ -14,8 +14,11 @@ import (
 
 func main() {
 
-	tcpAddr, resolveErr := net.ResolveTCPAddr("tcp4", ":9000")
+	leaderAddr, resolveErr := net.ResolveTCPAddr("tcp4", ":8081")
 	common.CheckError(resolveErr)
+
+	readReplAddr, resolveErr2 := net.ResolveTCPAddr("tcp4", ":8082")
+	common.CheckError(resolveErr2)
 
 	var src string
 	var err error
@@ -32,7 +35,15 @@ func main() {
 			continue
 		}
 
-		conn, dialErr := net.DialTCP("tcp", nil, tcpAddr)
+		var addr *net.TCPAddr
+
+		if action == common.Get {
+			addr = readReplAddr
+		} else {
+			addr = leaderAddr
+		}
+
+		conn, dialErr := net.DialTCP("tcp", nil, addr)
 		common.CheckError(dialErr)
 
 		payload := protocol.Encode(action, key, val)
